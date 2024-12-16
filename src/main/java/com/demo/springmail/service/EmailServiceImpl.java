@@ -1,11 +1,14 @@
 package com.demo.springmail.service;
 
 import com.demo.springmail.dtos.EmailDetails;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class EmailServiceImpl implements EmailService {
@@ -30,13 +33,35 @@ public class EmailServiceImpl implements EmailService {
         }
         catch (Exception e)
         {
-            return e.getMessage();
+            return "Error while sending email: " + e.getMessage();
         }
 
     }
 
     @Override
     public String sendMailWithAttachment(EmailDetails details) {
-        return "";
+        try {
+            // Create a MimeMessage
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+
+            // Set up MimeMessageHelper for attachments
+            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true);
+            mimeMessageHelper.setFrom(sender);
+            mimeMessageHelper.setTo(details.getRecipient());
+            mimeMessageHelper.setSubject(details.getSubject());
+            mimeMessageHelper.setText(details.getMsgBody());
+
+            // Handle attachment if provided
+            MultipartFile attachment = details.getAttachment();
+            if (attachment != null && !attachment.isEmpty()) {
+                mimeMessageHelper.addAttachment(attachment.getOriginalFilename(), attachment);
+            }
+
+            // Send the email
+            javaMailSender.send(mimeMessage);
+            return "Email Sent Successfully with attachment";
+        } catch (Exception e) {
+            return "Error while sending email: " + e.getMessage();
+        }
     }
 }
